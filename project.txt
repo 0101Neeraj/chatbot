@@ -1,539 +1,679 @@
-main.py
+AI CAMPUS CHATBOT API - COMPLETE SETUP GUIDE
+===============================================
+
+This guide contains everything needed to set up and run the AI Campus Chatbot API on a new PC.
+
+PREREQUISITES
+=============
+- Python 3.8 or higher installed
+- pip (Python package installer)
+
+PROJECT STRUCTURE
+=================
+ai_campus_chatbot_api/
+├── __init__.py
+├── main.py                 # FastAPI app entry point
+├── routes.py               # API endpoints
+├── services.py             # ChatBot class
+├── schemas.py              # Pydantic models
+├── models.py               # Database models & functions
+├── requirements.txt        # Python dependencies
+└── database.db            # SQLite database (created automatically)
+
+STEP-BY-STEP SETUP
+==================
+
+1. CREATE PROJECT DIRECTORY
+   -------------------------
+   mkdir "ai_campus_chatbot_api"
+   cd "ai_campus_chatbot_api"
+
+2. CREATE VIRTUAL ENVIRONMENT
+   --------------------------
+   # Windows Command Prompt:
+   python -m venv venv
+   
+   # Windows PowerShell:
+   python -m venv venv
+
+3. ACTIVATE VIRTUAL ENVIRONMENT
+   -----------------------------
+   # Windows Command Prompt:
+   venv\Scripts\activate.bat
+   
+   # Windows PowerShell:
+   & venv\Scripts\activate.bat
+   
+   # Linux/Mac:
+   source venv/bin/activate
+
+4. INSTALL DEPENDENCIES
+   ---------------------
+   pip install -r requirements.txt
+
+5. RUN THE APPLICATION
+   -------------------
+   # Method 1: Using uvicorn directly
+   uvicorn ai_campus_chatbot_api.main:app --host 0.0.0.0 --port 8000 --reload
+   
+   # Method 2: Using Python module
+   python -m uvicorn ai_campus_chatbot_api.main:app --host 0.0.0.0 --port 8000 --reload
+   
+   # Method 3: Direct execution
+   python ai_campus_chatbot_api/main.py
+
+REQUIREMENTS.TXT CONTENT
+========================
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+email-validator==2.2.0
+
+API ENDPOINTS
+=============
+- GET  /                           - Welcome message
+- POST /api/session                - Create chat session
+- GET  /api/chat-history          - Get user sessions
+- POST /api/chat                   - Chat with bot
+- POST /api/enroll                 - Enroll in course
+- GET  /api/courses               - List all courses
+- GET  /api/courses/search        - Search courses
+- GET  /api/enrollments           - List enrollments
+
+ACCESS POINTS
+=============
+- API Documentation: http://127.0.0.1:8000/docs
+- Alternative Docs: http://127.0.0.1:8000/redoc
+- API Root: http://127.0.0.1:8000/
+
+TESTING COMMANDS
+================
+
+1. Create Session:
+   curl -X POST http://127.0.0.1:8000/api/session ^
+        -H "Content-Type: application/json" ^
+        -d "{\"session_id\":\"test-123\",\"user_email\":\"student@example.com\"}"
+
+2. Chat with Bot:
+   curl -X POST http://127.0.0.1:8000/api/chat ^
+        -H "Content-Type: application/json" ^
+        -d "{\"session_id\":\"test-123\",\"message\":\"list courses\"}"
+
+3. Search Courses:
+   curl -X GET "http://127.0.0.1:8000/api/courses/search?keyword=python"
+
+4. Enroll in Course:
+   curl -X POST http://127.0.0.1:8000/api/enroll ^
+        -H "Content-Type: application/json" ^
+        -d "{\"session_id\":\"test-123\",\"course_code\":\"CS102\",\"student_name\":\"John Doe\",\"student_email\":\"john@example.com\"}"
+
+5. Get All Courses:
+   curl -X GET http://127.0.0.1:8000/api/courses
+
+QUICK START COMMANDS (Windows)
+==============================
+# Copy and paste these commands in Command Prompt:
+
+# 1. Create and navigate to project directory
+mkdir "ai_campus_chatbot_api"
+cd "ai_campus_chatbot_api"
+
+# 2. Create virtual environment
+python -m venv venv
+
+# 3. Activate virtual environment
+venv\Scripts\activate.bat
+
+# 4. Install dependencies
+pip install fastapi==0.115.0 uvicorn[standard]==0.30.6 pydantic==2.9.2 pydantic-settings==2.6.1 python-dotenv==1.0.1 email-validator==2.2.0
+
+# 5. Run the application
+uvicorn ai_campus_chatbot_api.main:app --host 0.0.0.0 --port 8000 --reload
+
+TROUBLESHOOTING
+===============
+
+1. If "python" command not found:
+   - Install Python from https://python.org
+   - Make sure to check "Add Python to PATH" during installation
+
+2. If "pip" command not found:
+   - Run: python -m ensurepip --upgrade
+
+3. If import errors occur:
+   - Make sure virtual environment is activated
+   - Check that all dependencies are installed: pip list
+
+4. If port 8000 is busy:
+   - Use different port: --port 8001
+   - Or kill process using port 8000
+
+5. Database issues:
+   - Database is created automatically on first run
+   - Delete database.db to reset data
+
+DEACTIVATE VIRTUAL ENVIRONMENT
+==============================
+# When done working:
+deactivate
+
+PRODUCTION DEPLOYMENT NOTES
+===========================
+- Change database path in models.py for production
+- Add proper CORS settings if needed
+- Use environment variables for configuration
+- Consider using a production ASGI server like Gunicorn
+- Add proper logging and monitoring
+
+SUPPORTED CHATBOT INTENTS
+=========================
+- greeting: "hi", "hello", "hey"
+- list: "list courses", "show all"
+- search: "find python", "search machine learning"
+- enroll: "enroll", "register", "sign up"
+- exit: "bye", "exit", "thanks"
+
+DEFAULT COURSES
+===============
+- CS102: Python for AI (AI Fundamentals)
+- ML201: ML Fundamentals (Machine Learning)
+- DL301: Deep Learning (Deep Learning)
+- NLP201: NLP Basics (NLP)
+
+For any issues, check the FastAPI documentation at https://fastapi.tiangolo.com/
+
+
+
+---main.py---
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from .routes import api_router
-from .models import init_db_and_seed
-
-
-def create_app() -> FastAPI:
-	app = FastAPI(
-		title="AI Campus Assistant API",
-		version="1.0.0",
-		description="REST API chatbot to help students discover and enroll in AI/CS courses",
-		docs_url="/docs",
-		redoc_url="/redoc",
-	)
-
-	app.add_middleware(
-		CORSMiddleware,
-		allow_origins=["*"],
-		allow_credentials=True,
-		allow_methods=["*"],
-		allow_headers=["*"],
-	)
-
-	@app.on_event("startup")
-	def on_startup() -> None:
-		init_db_and_seed()
-
-	app.include_router(api_router)
-	return app
+from contextlib import asynccontextmanager
+from . import models
+from .routes import router
 
 
-app = create_app()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+	models.init_db()
+	models.seed_db()
+	yield
 
 
-models.py
+app = FastAPI(title="AI Campus Assistant Chatbot API", version="1.0.0", lifespan=lifespan)
 
-from __future__ import annotations
-
-import datetime as dt
-from typing import Generator, Optional
-
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, create_engine, select
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
-
-DATABASE_URL = "sqlite:///ai_campus_chatbot_api/database.db"
-
-engine = create_engine(
-	DATABASE_URL,
-	connect_args={"check_same_thread": False},
-	future=True,
-)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
-
-Base = declarative_base()
+app.include_router(router)
 
 
-class Course(Base):
-	__tablename__ = "courses"
+# For local running: python -m ai_campus_chatbot_api.main
+if __name__ == "__main__":
+	import uvicorn
+	uvicorn.run("ai_campus_chatbot_api.main:app", host="0.0.0.0", port=8000, reload=True)
 
-	id = Column(Integer, primary_key=True, index=True)
-	code = Column(String(50), unique=True, nullable=False, index=True)
-	name = Column(String(255), nullable=False)
-	category = Column(String(100), nullable=False)
-	instructor = Column(String(100), nullable=False)
-	keywords = Column(Text, nullable=True)  # comma-separated
+---models.py---
 
-	enrollments = relationship("Enrollment", back_populates="course", cascade="all, delete-orphan")
+import sqlite3
+from datetime import datetime
+from typing import List, Optional, Dict, Any
 
-
-class SessionModel(Base):
-	__tablename__ = "sessions"
-
-	id = Column(Integer, primary_key=True, index=True)
-	session_id = Column(String(100), unique=True, index=True, nullable=False)
-	user_email = Column(String(255), index=True, nullable=False)
-	started_at = Column(DateTime, default=dt.datetime.utcnow, nullable=False)
-
-	messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
-	enrollments = relationship("Enrollment", back_populates="session", cascade="all, delete-orphan")
+DB_PATH = "D:/ai chatbot/ai_campus_chatbot_api/database.db"
 
 
-class Enrollment(Base):
-	__tablename__ = "enrollments"
-
-	id = Column(Integer, primary_key=True, index=True)
-	session_id = Column(String(100), ForeignKey("sessions.session_id"), nullable=False, index=True)
-	course_code = Column(String(50), ForeignKey("courses.code"), nullable=False)
-	student_name = Column(String(255), nullable=False)
-	student_email = Column(String(255), nullable=False)
-	enrolled_at = Column(DateTime, default=dt.datetime.utcnow, nullable=False)
-
-	session = relationship("SessionModel", back_populates="enrollments", primaryjoin="Enrollment.session_id==SessionModel.session_id")
-	course = relationship("Course", back_populates="enrollments", primaryjoin="Enrollment.course_code==Course.code")
+def get_connection() -> sqlite3.Connection:
+	conn = sqlite3.connect(DB_PATH)
+	conn.row_factory = sqlite3.Row
+	return conn
 
 
-class ChatMessage(Base):
-	__tablename__ = "chat_messages"
-
-	id = Column(Integer, primary_key=True, index=True)
-	session_id = Column(String(100), ForeignKey("sessions.session_id"), nullable=False, index=True)
-	user_message = Column(Text, nullable=False)
-	bot_response = Column(Text, nullable=False)
-	intent = Column(String(50), nullable=False)
-	created_at = Column(DateTime, default=dt.datetime.utcnow, nullable=False)
-
-	session = relationship("SessionModel", back_populates="messages", primaryjoin="ChatMessage.session_id==SessionModel.session_id")
-
-
-# DB helpers
-
-def get_db() -> Generator[Session, None, None]:
-	db = SessionLocal()
+def init_db() -> None:
+	conn = get_connection()
 	try:
-		yield db
+		cur = conn.cursor()
+		# Create tables
+		cur.execute(
+			"""
+			CREATE TABLE IF NOT EXISTS courses (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				code TEXT UNIQUE NOT NULL,
+				name TEXT NOT NULL,
+				category TEXT NOT NULL,
+				instructor TEXT NOT NULL,
+				keywords TEXT
+			)
+			"""
+		)
+		cur.execute(
+			"""
+			CREATE TABLE IF NOT EXISTS sessions (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				session_id TEXT UNIQUE NOT NULL,
+				user_email TEXT,
+				started_at TEXT NOT NULL
+			)
+			"""
+		)
+		cur.execute(
+			"""
+			CREATE TABLE IF NOT EXISTS enrollments (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				session_id TEXT NOT NULL,
+				course_code TEXT NOT NULL,
+				student_name TEXT NOT NULL,
+				student_email TEXT NOT NULL,
+				enrolled_at TEXT NOT NULL
+			)
+			"""
+		)
+		cur.execute(
+			"""
+			CREATE TABLE IF NOT EXISTS chat_messages (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				session_id TEXT NOT NULL,
+				user_message TEXT NOT NULL,
+				bot_response TEXT NOT NULL,
+				intent TEXT NOT NULL,
+				created_at TEXT NOT NULL
+			)
+			"""
+		)
+		conn.commit()
 	finally:
-		db.close()
+		conn.close()
 
 
-def init_db_and_seed() -> None:
-	"""Create tables and seed default courses if not present."""
-	Base.metadata.create_all(bind=engine)
-	with SessionLocal() as db:
-		# Seed default courses if empty
-		count = db.scalar(select(Integer).select_from(Course))
-		# The above select doesn't count; use proper count
-		num_courses = db.query(Course).count()
-		if num_courses == 0:
-			default_courses = [
-				{"code": "CS102", "name": "Python for AI", "category": "AI Fundamentals", "instructor": "Dr. Smith", "keywords": "python, beginner, programming"},
-				{"code": "ML201", "name": "ML Fundamentals", "category": "Machine Learning", "instructor": "Prof. Lee", "keywords": "machine learning, ml, supervised"},
-				{"code": "DL301", "name": "Deep Learning", "category": "Deep Learning", "instructor": "Dr. Kim", "keywords": "deep learning, neural network, tensorflow"},
-				{"code": "NLP201", "name": "NLP Basics", "category": "NLP", "instructor": "Dr. Patel", "keywords": "nlp, text, language"},
+def seed_db() -> None:
+	conn = get_connection()
+	try:
+		cur = conn.cursor()
+		# Seed courses if empty
+		cur.execute("SELECT COUNT(1) AS c FROM courses")
+		count = cur.fetchone()[0]
+		if count == 0:
+			courses = [
+				("CS102", "Python for AI", "AI Fundamentals", "Dr. Smith", "python, beginner, programming"),
+				("ML201", "ML Fundamentals", "Machine Learning", "Prof. Lee", "machine learning, ml, supervised"),
+				("DL301", "Deep Learning", "Deep Learning", "Dr. Kim", "deep learning, neural network, tensorflow"),
+				("NLP201", "NLP Basics", "NLP", "Dr. Chen", "nlp, text, language"),
 			]
-			for c in default_courses:
-				db.add(Course(**c))
-			db.commit()
+			cur.executemany(
+				"INSERT INTO courses (code, name, category, instructor, keywords) VALUES (?, ?, ?, ?, ?)",
+				courses,
+			)
+			conn.commit()
+	finally:
+		conn.close()
 
 
-routes.py
+# Data access functions
 
-from __future__ import annotations
+def list_courses() -> List[Dict[str, Any]]:
+	conn = get_connection()
+	try:
+		cur = conn.cursor()
+		cur.execute("SELECT code, name, category, instructor, keywords FROM courses ORDER BY name ASC")
+		rows = cur.fetchall()
+		return [dict(row) for row in rows]
+	finally:
+		conn.close()
 
-from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+def search_courses(keyword: str) -> List[Dict[str, Any]]:
+	kw = f"%{keyword.lower()}%"
+	conn = get_connection()
+	try:
+		cur = conn.cursor()
+		cur.execute(
+			"""
+			SELECT code, name, category, instructor, keywords
+			FROM courses
+			WHERE lower(name) LIKE ? OR lower(category) LIKE ? OR lower(instructor) LIKE ? OR lower(keywords) LIKE ? OR lower(code) LIKE ?
+			ORDER BY name ASC
+			""",
+			(kw, kw, kw, kw, kw),
+		)
+		return [dict(row) for row in cur.fetchall()]
+	finally:
+		conn.close()
 
-from .models import get_db
+
+def create_session(session_id: str, user_email: Optional[str]) -> None:
+	conn = get_connection()
+	try:
+		cur = conn.cursor()
+		cur.execute(
+			"INSERT OR IGNORE INTO sessions (session_id, user_email, started_at) VALUES (?, ?, ?)",
+			(session_id, user_email, datetime.utcnow().isoformat()),
+		)
+		conn.commit()
+	finally:
+		conn.close()
+
+
+def list_sessions_by_email(user_email: str) -> List[Dict[str, Any]]:
+	conn = get_connection()
+	try:
+		cur = conn.cursor()
+		cur.execute(
+			"SELECT session_id, user_email, started_at FROM sessions WHERE user_email = ? ORDER BY started_at DESC",
+			(user_email,),
+		)
+		return [dict(row) for row in cur.fetchall()]
+	finally:
+		conn.close()
+
+
+def add_enrollment(session_id: str, course_code: str, student_name: str, student_email: str) -> None:
+	conn = get_connection()
+	try:
+		cur = conn.cursor()
+		cur.execute(
+			"""
+			INSERT INTO enrollments (session_id, course_code, student_name, student_email, enrolled_at)
+			VALUES (?, ?, ?, ?, ?)
+			""",
+			(session_id, course_code, student_name, student_email, datetime.utcnow().isoformat()),
+		)
+		conn.commit()
+	finally:
+		conn.close()
+
+
+def list_enrollments() -> List[Dict[str, Any]]:
+	conn = get_connection()
+	try:
+		cur = conn.cursor()
+		cur.execute(
+			"SELECT session_id, course_code, student_name, student_email, enrolled_at FROM enrollments ORDER BY enrolled_at DESC"
+		)
+		return [dict(row) for row in cur.fetchall()]
+	finally:
+		conn.close()
+
+
+def save_chat_message(session_id: str, user_message: str, bot_response: str, intent: str) -> None:
+	conn = get_connection()
+	try:
+		cur = conn.cursor()
+		cur.execute(
+			"""
+			INSERT INTO chat_messages (session_id, user_message, bot_response, intent, created_at)
+			VALUES (?, ?, ?, ?, ?)
+			""",
+			(session_id, user_message, bot_response, intent, datetime.utcnow().isoformat()),
+		)
+		conn.commit()
+	finally:
+		conn.close()
+
+
+def get_chat_history(session_id: str) -> List[Dict[str, Any]]:
+	conn = get_connection()
+	try:
+		cur = conn.cursor()
+		cur.execute(
+			"SELECT user_message, bot_response, intent, created_at FROM chat_messages WHERE session_id = ? ORDER BY id ASC",
+			(session_id,),
+		)
+		return [dict(row) for row in cur.fetchall()]
+	finally:
+		conn.close()
+
+
+---routes.py---
+
+from fastapi import APIRouter, HTTPException
+from typing import List, Dict
+from . import models
+from .services import bot
 from .schemas import (
 	ChatRequest,
 	ChatResponse,
-	CourseOut,
-	EnrollRequest,
-	EnrollmentOut,
-	SessionCreate,
-	SessionOut,
-)
-from .services import (
-	ChatBot,
-	create_enrollment,
-	create_session,
-	get_session_by_id,
-	get_sessions_by_email,
-	list_courses,
-	list_enrollments,
-	log_chat,
-	search_courses,
+	EnrollmentRequest,
+	Course,
+	Enrollment,
+	CreateSessionRequest,
+	Session,
 )
 
-api_router = APIRouter()
+router = APIRouter()
 
 
-@api_router.get("/", summary="Welcome endpoint")
-async def root() -> dict:
+@router.get("/", tags=["root"])
+async def root() -> Dict[str, str]:
 	return {
-		"message": "Welcome to AI Campus Assistant API. See /docs for API documentation.",
+		"message": "Welcome to AI Campus Assistant Chatbot API. See /docs for Swagger UI.",
 	}
 
 
-@api_router.post("/api/session", response_model=SessionOut)
-def api_create_session(payload: SessionCreate, db=Depends(get_db)):
-	session = create_session(db, payload.user_email)
-	return session
+@router.post("/api/session", tags=["session"])
+async def create_session(payload: CreateSessionRequest) -> Dict[str, str]:
+	models.create_session(payload.session_id, payload.user_email)
+	return {"session_id": payload.session_id}
 
 
-@api_router.get("/api/courses", response_model=List[CourseOut])
-def api_list_courses(db=Depends(get_db)):
-	return list_courses(db)
+@router.get("/api/chat-history", tags=["session"], response_model=List[Session])
+async def chat_history(user_email: str) -> List[Session]:
+	sessions = models.list_sessions_by_email(user_email)
+	return [Session(**s) for s in sessions]
 
 
-@api_router.get("/api/courses/search", response_model=List[CourseOut])
-def api_search_courses(keyword: str, db=Depends(get_db)):
-	if not keyword:
-		raise HTTPException(status_code=400, detail="keyword is required")
-	return search_courses(db, keyword)
+@router.post("/api/chat", tags=["chat"], response_model=ChatResponse)
+async def chat(payload: ChatRequest) -> ChatResponse:
+	# Ensure session exists implicitly
+	models.create_session(payload.session_id, None)
+	result = bot.process_message(payload.session_id, payload.message)
+	return ChatResponse(session_id=payload.session_id, intent=result["intent"], response=result["response"])
 
 
-@api_router.get("/api/enrollments", response_model=List[EnrollmentOut])
-def api_list_enrollments(db=Depends(get_db)):
-	return list_enrollments(db)
-
-
-@api_router.post("/api/enroll", response_model=EnrollmentOut)
-def api_enroll(payload: EnrollRequest, db=Depends(get_db)):
-	# validate course exists
-	courses = search_courses(db, payload.course_code)
-	if not any(c.code.lower() == payload.course_code.lower() for c in courses):
+@router.post("/api/enroll", tags=["enroll"])
+async def enroll(payload: EnrollmentRequest) -> Dict[str, str]:
+	# Basic validation: course exists
+	matches = [c for c in models.search_courses(payload.course_code) if c["code"].lower() == payload.course_code.lower()]
+	if not matches:
 		raise HTTPException(status_code=404, detail="Course not found")
-	# validate session exists
-	if not get_session_by_id(db, payload.session_id):
-		raise HTTPException(status_code=404, detail="Session not found")
-	return create_enrollment(
-		db,
-		payload.session_id,
-		payload.course_code,
-		payload.student_name,
-		payload.student_email,
+	models.add_enrollment(
+		session_id=payload.session_id,
+		course_code=payload.course_code,
+		student_name=payload.student_name,
+		student_email=payload.student_email,
 	)
+	return {"status": "enrolled", "course_code": payload.course_code}
 
 
-@api_router.post("/api/chat", response_model=ChatResponse)
-def api_chat(payload: ChatRequest, db=Depends(get_db)):
-	# Ensure session
-	if payload.session_id:
-		session = get_session_by_id(db, payload.session_id)
-		if not session:
-			raise HTTPException(status_code=404, detail="Session not found")
-	else:
-		session = create_session(db, payload.user_email)
-
-	bot = ChatBot(db)
-	intent, response_text, matched = bot.process_message(payload.message)
-
-	# log
-	log_chat(
-		db,
-		session.session_id,
-		payload.message,
-		response_text,
-		intent,
-	)
-
-	return ChatResponse(
-		intent=intent,
-		response=response_text,
-		matched_courses=[CourseOut.model_validate(c) for c in matched],
-		session_id=session.session_id,
-	)
+@router.get("/api/courses", tags=["courses"], response_model=List[Course])
+async def get_courses() -> List[Course]:
+	return [Course(**c) for c in models.list_courses()]
 
 
-@api_router.get("/api/chat-history")
-def api_chat_history(email: str, db=Depends(get_db)):
-	sessions = get_sessions_by_email(db, email)
+@router.get("/api/courses/search", tags=["courses"], response_model=List[Course])
+async def search_courses(keyword: str) -> List[Course]:
+	return [Course(**c) for c in models.search_courses(keyword)]
+
+
+@router.get("/api/enrollments", tags=["enroll"], response_model=List[Enrollment])
+async def get_enrollments() -> List[Enrollment]:
+	return [Enrollment(**e) for e in models.list_enrollments()]
+
+
+----schemas.py----
+
+from fastapi import APIRouter, HTTPException
+from typing import List, Dict
+from . import models
+from .services import bot
+from .schemas import (
+	ChatRequest,
+	ChatResponse,
+	EnrollmentRequest,
+	Course,
+	Enrollment,
+	CreateSessionRequest,
+	Session,
+)
+
+router = APIRouter()
+
+
+@router.get("/", tags=["root"])
+async def root() -> Dict[str, str]:
 	return {
-		"email": email,
-		"sessions": [
-			{"session_id": s.session_id, "started_at": s.started_at}
-			for s in sessions
-		],
+		"message": "Welcome to AI Campus Assistant Chatbot API. See /docs for Swagger UI.",
 	}
 
 
-schemas.py
-
-from __future__ import annotations
-
-import datetime as dt
-from typing import List, Optional
-
-from pydantic import BaseModel, EmailStr, Field
+@router.post("/api/session", tags=["session"])
+async def create_session(payload: CreateSessionRequest) -> Dict[str, str]:
+	models.create_session(payload.session_id, payload.user_email)
+	return {"session_id": payload.session_id}
 
 
-# Course
-class CourseOut(BaseModel):
-	code: str
-	name: str
-	category: str
-	instructor: str
-	keywords: Optional[str] = None
-
-	class Config:
-		from_attributes = True
+@router.get("/api/chat-history", tags=["session"], response_model=List[Session])
+async def chat_history(user_email: str) -> List[Session]:
+	sessions = models.list_sessions_by_email(user_email)
+	return [Session(**s) for s in sessions]
 
 
-# Session
-class SessionCreate(BaseModel):
-	user_email: EmailStr
+@router.post("/api/chat", tags=["chat"], response_model=ChatResponse)
+async def chat(payload: ChatRequest) -> ChatResponse:
+	# Ensure session exists implicitly
+	models.create_session(payload.session_id, None)
+	result = bot.process_message(payload.session_id, payload.message)
+	return ChatResponse(session_id=payload.session_id, intent=result["intent"], response=result["response"])
 
 
-class SessionOut(BaseModel):
-	session_id: str
-	user_email: EmailStr
-	started_at: dt.datetime
-
-	class Config:
-		from_attributes = True
-
-
-# Chat
-class ChatRequest(BaseModel):
-	user_email: EmailStr
-	message: str
-	session_id: Optional[str] = None
-
-
-class ChatResponse(BaseModel):
-	intent: str
-	response: str
-	matched_courses: List[CourseOut] = Field(default_factory=list)
-	session_id: str
-
-
-# Enrollment
-class EnrollRequest(BaseModel):
-	session_id: str
-	course_code: str
-	student_name: str
-	student_email: EmailStr
-
-
-class EnrollmentOut(BaseModel):
-	id: int
-	session_id: str
-	course_code: str
-	student_name: str
-	student_email: EmailStr
-	enrolled_at: dt.datetime
-
-	class Config:
-		from_attributes = True
-
-
-# History
-class ChatMessageOut(BaseModel):
-	id: int
-	session_id: str
-	user_message: str
-	bot_response: str
-	intent: str
-	created_at: dt.datetime
-
-	class Config:
-		from_attributes = True
-
-
-services.py
-
-from __future__ import annotations
-
-import datetime as dt
-import uuid
-from typing import List, Optional, Tuple
-
-from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
-
-from .models import ChatMessage, Course, Enrollment, SessionModel
-
-
-# Service utilities
-
-def create_session(db: Session, user_email: str) -> SessionModel:
-	session = SessionModel(session_id=str(uuid.uuid4()), user_email=user_email)
-	db.add(session)
-	db.commit()
-	db.refresh(session)
-	return session
-
-
-def get_session_by_id(db: Session, session_id: str) -> Optional[SessionModel]:
-	return db.query(SessionModel).filter(SessionModel.session_id == session_id).first()
-
-
-def get_sessions_by_email(db: Session, user_email: str) -> List[SessionModel]:
-	return db.query(SessionModel).filter(SessionModel.user_email == user_email).order_by(SessionModel.started_at.desc()).all()
-
-
-def list_courses(db: Session) -> List[Course]:
-	return db.query(Course).order_by(Course.code.asc()).all()
-
-
-def search_courses(db: Session, keyword: str) -> List[Course]:
-	kw = f"%{keyword.lower()}%"
-	return (
-		db.query(Course)
-		.filter(
-			or_(
-				Course.name.ilike(kw),
-				Course.category.ilike(kw),
-				Course.instructor.ilike(kw),
-				Course.code.ilike(kw),
-				Course.keywords.ilike(kw),
-			)
-		)
-		.order_by(Course.code.asc())
-		.all()
+@router.post("/api/enroll", tags=["enroll"])
+async def enroll(payload: EnrollmentRequest) -> Dict[str, str]:
+	# Basic validation: course exists
+	matches = [c for c in models.search_courses(payload.course_code) if c["code"].lower() == payload.course_code.lower()]
+	if not matches:
+		raise HTTPException(status_code=404, detail="Course not found")
+	models.add_enrollment(
+		session_id=payload.session_id,
+		course_code=payload.course_code,
+		student_name=payload.student_name,
+		student_email=payload.student_email,
 	)
+	return {"status": "enrolled", "course_code": payload.course_code}
 
 
-def create_enrollment(
-	db: Session,
-	session_id: str,
-	course_code: str,
-	student_name: str,
-	student_email: str,
-) -> Enrollment:
-	enroll = Enrollment(
-		session_id=session_id,
-		course_code=course_code,
-		student_name=student_name,
-		student_email=student_email,
-	)
-	db.add(enroll)
-	db.commit()
-	db.refresh(enroll)
-	return enroll
+@router.get("/api/courses", tags=["courses"], response_model=List[Course])
+async def get_courses() -> List[Course]:
+	return [Course(**c) for c in models.list_courses()]
 
 
-def list_enrollments(db: Session) -> List[Enrollment]:
-	return db.query(Enrollment).order_by(Enrollment.enrolled_at.desc()).all()
+@router.get("/api/courses/search", tags=["courses"], response_model=List[Course])
+async def search_courses(keyword: str) -> List[Course]:
+	return [Course(**c) for c in models.search_courses(keyword)]
 
 
-def log_chat(
-	db: Session,
-	session_id: str,
-	user_message: str,
-	bot_response: str,
-	intent: str,
-) -> ChatMessage:
-	msg = ChatMessage(
-		session_id=session_id,
-		user_message=user_message,
-		bot_response=bot_response,
-		intent=intent,
-	)
-	db.add(msg)
-	db.commit()
-	db.refresh(msg)
-	return msg
+@router.get("/api/enrollments", tags=["enroll"], response_model=List[Enrollment])
+async def get_enrollments() -> List[Enrollment]:
+	return [Enrollment(**e) for e in models.list_enrollments()]
 
 
-# ChatBot class
+---services.py---
+
+from typing import List, Dict, Any
+from . import models
+
+
 class ChatBot:
-	greeting_keywords = {"hi", "hello", "hey"}
-	list_keywords = {"list", "all courses", "show courses"}
-	search_keywords = {"search", "find", "looking", "look for"}
-	enroll_keywords = {"enroll", "register", "join"}
-	exit_keywords = {"bye", "exit", "quit"}
-
-	def __init__(self, db: Session):
-		self.db = db
+	def __init__(self) -> None:
+		self.greeting_keywords = [
+			"hi",
+			"hello",
+			"hey",
+			"good morning",
+			"good evening",
+			"hola",
+		]
+		self.list_keywords = ["list", "show all", "catalog", "courses"]
+		self.search_keywords = ["find", "search", "look for", "have"]
+		self.enroll_keywords = ["enroll", "register", "sign up", "apply"]
+		self.exit_keywords = ["bye", "exit", "quit", "thanks", "thank you"]
 
 	def detect_intent(self, message: str) -> str:
-		m = message.lower().strip()
-		if any(k in m for k in self.greeting_keywords):
+		text = message.lower().strip()
+		if any(k in text for k in self.greeting_keywords):
 			return "greeting"
-		if any(k in m for k in self.exit_keywords):
-			return "exit"
-		if any(k in m for k in self.enroll_keywords):
-			return "enroll"
-		if any(k in m for k in self.list_keywords):
+		if any(k in text for k in self.list_keywords):
 			return "list"
-		if any(k in m for k in self.search_keywords):
+		if any(k in text for k in self.enroll_keywords):
+			return "enroll"
+		if any(k in text for k in self.search_keywords):
 			return "search"
-		# Heuristic: if message contains known course/category keywords, treat as search
-		if self._message_contains_course_keyword(m):
-			return "search"
+		if any(k in text for k in self.exit_keywords):
+			return "exit"
 		return "unknown"
 
-	def _message_contains_course_keyword(self, m: str) -> bool:
-		courses = list_courses(self.db)
-		for c in courses:
-			all_kw = f"{c.name} {c.category} {c.instructor} {c.code} {c.keywords or ''}".lower()
-			# match any token
-			for token in m.split():
-				if token and token in all_kw:
-					return True
-		return False
+	def find_courses(self, message: str) -> List[Dict[str, Any]]:
+		# Use keywords present to search
+		tokens = [t.strip(',.:;!?') for t in message.lower().split() if len(t) > 2]
+		unique_tokens = list(dict.fromkeys(tokens))
+		results: List[Dict[str, Any]] = []
+		seen_codes = set()
+		for token in unique_tokens:
+			if token in {"list", "show", "courses", "course", "find", "search", "have", "any"}:
+				continue
+			matches = models.search_courses(token)
+			for m in matches:
+				if m["code"] not in seen_codes:
+					results.append(m)
+					seen_codes.add(m["code"])
+		if not results:
+			# Fallback to listing all if no keywords found
+			results = models.list_courses()
+		return results
 
-	def find_courses(self, message: str) -> List[Course]:
-		m = message.lower()
-		matches = []
-		for c in list_courses(self.db):
-			kw_blob = f"{c.name} {c.category} {c.instructor} {c.code} {c.keywords or ''}".lower()
-			if any(token in kw_blob for token in m.split()):
-				matches.append(c)
-		return matches
-
-	def process_message(self, message: str) -> Tuple[str, str, List[Course]]:
-		"""Return (intent, response, matched_courses)."""
+	def process_message(self, session_id: str, message: str) -> Dict[str, Any]:
 		intent = self.detect_intent(message)
 		if intent == "greeting":
-			return intent, (
+			response = (
 				"Hello! I can help you discover AI/CS courses. "
-				"Try: 'list courses', 'search deep learning', or 'enroll in ML201'."
-			), []
-		if intent == "exit":
-			return intent, "Goodbye! Feel free to come back anytime.", []
-		if intent == "list":
-			courses = list_courses(self.db)
+				"Ask me to list courses, search by keyword (e.g., 'search deep learning'), or say 'enroll' to register."
+			)
+		elif intent == "list":
+			courses = models.list_courses()
 			if not courses:
-				return intent, "No courses available right now.", []
-			lines = [f"- {c.name} ({c.code}) — {c.category} by {c.instructor}" for c in courses]
-			return intent, "Here are the available courses:\n" + "\n".join(lines), courses
-		if intent == "search":
-			courses = self.find_courses(message)
-			if not courses:
-				return intent, "I couldn't find courses for that query.", []
-			lines = [f"- {c.name} ({c.code}) — {c.category}" for c in courses]
-			return intent, "I found these matching courses:\n" + "\n".join(lines), courses
-		if intent == "enroll":
-			return intent, (
-				"Sure! Tell me the course code and your name/email, or use the /api/enroll endpoint."
-			), []
-		# unknown
-		return intent, (
-			"I'm not sure I understood. You can say 'list courses', 'search NLP', or 'enroll in CS102'."
-		), []
+				response = "I couldn't find any courses right now."
+			else:
+				response = "Here are available courses:\n" + "\n".join(
+					[f"- {c['name']} ({c['code']}) — {c['category']} by {c['instructor']}" for c in courses]
+				)
+		elif intent == "search":
+			results = self.find_courses(message)
+			if not results:
+				response = "No courses matched your search. Try different keywords."
+			else:
+				response = "I found these courses:\n" + "\n".join(
+					[f"- {c['name']} ({c['code']}) — {c['category']} by {c['instructor']}" for c in results]
+				)
+		elif intent == "enroll":
+			response = (
+				"Great! To enroll, send: course_code, your name, and email — or use /api/enroll."
+			)
+		elif intent == "exit":
+			response = "Thanks for chatting! Goodbye."
+		else:
+			response = (
+				"I'm not sure I understood. You can ask me to list courses, search by keyword, or enroll."
+			)
 
-requirements.txt
+		models.save_chat_message(session_id, message, response, intent)
+		return {"intent": intent, "response": response}
+
+
+bot = ChatBot()
+
+
+-------requirements.txt-----------
 
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
-SQLAlchemy==2.0.35
 pydantic==2.9.2
+pydantic-settings==2.6.1
 python-dotenv==1.0.1
+email-validator==2.2.0
 
-
-DATABASE_URL=mysql+pymysql://user:password@localhost:3306/library_app
-
- Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
- python -m venv venv
- .\venv\Scripts\activate
 pip install -r requirements.txt
- uvicorn main:app --reload  
-
-
