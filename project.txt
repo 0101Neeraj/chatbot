@@ -518,3 +518,22 @@ class ChatBot:
 		return intent, (
 			"I'm not sure I understood. You can say 'list courses', 'search NLP', or 'enroll in CS102'."
 		), []
+
+requirements.txt
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+SQLAlchemy==2.0.35
+pydantic==2.9.2
+python-dotenv==1.0.1
+
+
+DATABASE_URL=mysql+pymysql://user:password@localhost:3306/library_app
+
+ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+ python -m venv venv
+ .\venv\Scripts\activate
+pip install -r requirements.txt
+ uvicorn main:app --reload  
+
+
