@@ -1,679 +1,326 @@
-AI CAMPUS CHATBOT API - COMPLETE SETUP GUIDE
-===============================================
+inside the app folder
 
-This guide contains everything needed to set up and run the AI Campus Chatbot API on a new PC.
+__init__.py
 
-PREREQUISITES
-=============
-- Python 3.8 or higher installed
-- pip (Python package installer)
-
-PROJECT STRUCTURE
-=================
-ai_campus_chatbot_api/
-├── __init__.py
-├── main.py                 # FastAPI app entry point
-├── routes.py               # API endpoints
-├── services.py             # ChatBot class
-├── schemas.py              # Pydantic models
-├── models.py               # Database models & functions
-├── requirements.txt        # Python dependencies
-└── database.db            # SQLite database (created automatically)
-
-STEP-BY-STEP SETUP
-==================
-
-1. CREATE PROJECT DIRECTORY
-   -------------------------
-   mkdir "ai_campus_chatbot_api"
-   cd "ai_campus_chatbot_api"
-
-2. CREATE VIRTUAL ENVIRONMENT
-   --------------------------
-   # Windows Command Prompt:
-   python -m venv venv
-   
-   # Windows PowerShell:
-   python -m venv venv
-
-3. ACTIVATE VIRTUAL ENVIRONMENT
-   -----------------------------
-   # Windows Command Prompt:
-   venv\Scripts\activate.bat
-   
-   # Windows PowerShell:
-   & venv\Scripts\activate.bat
-   
-   # Linux/Mac:
-   source venv/bin/activate
-
-4. INSTALL DEPENDENCIES
-   ---------------------
-   pip install -r requirements.txt
-
-5. RUN THE APPLICATION
-   -------------------
-   # Method 1: Using uvicorn directly
-   uvicorn ai_campus_chatbot_api.main:app --host 0.0.0.0 --port 8000 --reload
-   
-   # Method 2: Using Python module
-   python -m uvicorn ai_campus_chatbot_api.main:app --host 0.0.0.0 --port 8000 --reload
-   
-   # Method 3: Direct execution
-   python ai_campus_chatbot_api/main.py
-
-REQUIREMENTS.TXT CONTENT
-========================
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-pydantic==2.9.2
-pydantic-settings==2.6.1
-python-dotenv==1.0.1
-email-validator==2.2.0
-
-API ENDPOINTS
-=============
-- GET  /                           - Welcome message
-- POST /api/session                - Create chat session
-- GET  /api/chat-history          - Get user sessions
-- POST /api/chat                   - Chat with bot
-- POST /api/enroll                 - Enroll in course
-- GET  /api/courses               - List all courses
-- GET  /api/courses/search        - Search courses
-- GET  /api/enrollments           - List enrollments
-
-ACCESS POINTS
-=============
-- API Documentation: http://127.0.0.1:8000/docs
-- Alternative Docs: http://127.0.0.1:8000/redoc
-- API Root: http://127.0.0.1:8000/
-
-TESTING COMMANDS
-================
-
-1. Create Session:
-   curl -X POST http://127.0.0.1:8000/api/session ^
-        -H "Content-Type: application/json" ^
-        -d "{\"session_id\":\"test-123\",\"user_email\":\"student@example.com\"}"
-
-2. Chat with Bot:
-   curl -X POST http://127.0.0.1:8000/api/chat ^
-        -H "Content-Type: application/json" ^
-        -d "{\"session_id\":\"test-123\",\"message\":\"list courses\"}"
-
-3. Search Courses:
-   curl -X GET "http://127.0.0.1:8000/api/courses/search?keyword=python"
-
-4. Enroll in Course:
-   curl -X POST http://127.0.0.1:8000/api/enroll ^
-        -H "Content-Type: application/json" ^
-        -d "{\"session_id\":\"test-123\",\"course_code\":\"CS102\",\"student_name\":\"John Doe\",\"student_email\":\"john@example.com\"}"
-
-5. Get All Courses:
-   curl -X GET http://127.0.0.1:8000/api/courses
-
-QUICK START COMMANDS (Windows)
-==============================
-# Copy and paste these commands in Command Prompt:
-
-# 1. Create and navigate to project directory
-mkdir "ai_campus_chatbot_api"
-cd "ai_campus_chatbot_api"
-
-# 2. Create virtual environment
-python -m venv venv
-
-# 3. Activate virtual environment
-venv\Scripts\activate.bat
-
-# 4. Install dependencies
-pip install fastapi==0.115.0 uvicorn[standard]==0.30.6 pydantic==2.9.2 pydantic-settings==2.6.1 python-dotenv==1.0.1 email-validator==2.2.0
-
-# 5. Run the application
-uvicorn ai_campus_chatbot_api.main:app --host 0.0.0.0 --port 8000 --reload
-
-TROUBLESHOOTING
-===============
-
-1. If "python" command not found:
-   - Install Python from https://python.org
-   - Make sure to check "Add Python to PATH" during installation
-
-2. If "pip" command not found:
-   - Run: python -m ensurepip --upgrade
-
-3. If import errors occur:
-   - Make sure virtual environment is activated
-   - Check that all dependencies are installed: pip list
-
-4. If port 8000 is busy:
-   - Use different port: --port 8001
-   - Or kill process using port 8000
-
-5. Database issues:
-   - Database is created automatically on first run
-   - Delete database.db to reset data
-
-DEACTIVATE VIRTUAL ENVIRONMENT
-==============================
-# When done working:
-deactivate
-
-PRODUCTION DEPLOYMENT NOTES
-===========================
-- Change database path in models.py for production
-- Add proper CORS settings if needed
-- Use environment variables for configuration
-- Consider using a production ASGI server like Gunicorn
-- Add proper logging and monitoring
-
-SUPPORTED CHATBOT INTENTS
-=========================
-- greeting: "hi", "hello", "hey"
-- list: "list courses", "show all"
-- search: "find python", "search machine learning"
-- enroll: "enroll", "register", "sign up"
-- exit: "bye", "exit", "thanks"
-
-DEFAULT COURSES
-===============
-- CS102: Python for AI (AI Fundamentals)
-- ML201: ML Fundamentals (Machine Learning)
-- DL301: Deep Learning (Deep Learning)
-- NLP201: NLP Basics (NLP)
-
-For any issues, check the FastAPI documentation at https://fastapi.tiangolo.com/
+from flask import Flask
+from flask_cors import CORS
+from .config import load_config
+from .db import init_db
 
 
+def create_app() -> Flask:
+	app = Flask(__name__)
+	CORS(app)
+	load_config(app)
+	init_db(app)
 
----main.py---
+	from .routes import api_bp  # noqa: E402
+	app.register_blueprint(api_bp)
 
-from fastapi import FastAPI
-from contextlib import asynccontextmanager
-from . import models
-from .routes import router
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-	models.init_db()
-	models.seed_db()
-	yield
+	return app
 
 
-app = FastAPI(title="AI Campus Assistant Chatbot API", version="1.0.0", lifespan=lifespan)
+config.py
 
-app.include_router(router)
-
-
-# For local running: python -m ai_campus_chatbot_api.main
-if __name__ == "__main__":
-	import uvicorn
-	uvicorn.run("ai_campus_chatbot_api.main:app", host="0.0.0.0", port=8000, reload=True)
-
----models.py---
-
-import sqlite3
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-
-DB_PATH = "D:/ai chatbot/ai_campus_chatbot_api/database.db"
+import os
+from dotenv import load_dotenv
 
 
-def get_connection() -> sqlite3.Connection:
-	conn = sqlite3.connect(DB_PATH)
-	conn.row_factory = sqlite3.Row
-	return conn
+def load_config(app):
+	load_dotenv(override=False)
+	app.config.setdefault("SQLALCHEMY_DATABASE_URI", os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/sampledb"))
+	app.config.setdefault("SQLALCHEMY_ECHO", False)
+	app.config.setdefault("JSON_SORT_KEYS", False)
+
+db.py
+
+from __future__ import annotations
+
+from typing import Dict, List
+
+from flask import Flask
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 
-def init_db() -> None:
-	conn = get_connection()
+engine: Engine | None = None
+SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False))
+
+
+def init_db(app: Flask) -> None:
+	global engine  # noqa: PLW0603
+	engine = create_engine(app.config["SQLALCHEMY_DATABASE_URI"], pool_pre_ping=True)
+	SessionLocal.configure(bind=engine)
+
+
+def get_db_session():
+	return SessionLocal()
+
+
+def get_db_status() -> Dict[str, object]:
+	if engine is None:
+		return {"status": "not_initialized"}
+	inspector = inspect(engine)
 	try:
-		cur = conn.cursor()
-		# Create tables
-		cur.execute(
-			"""
-			CREATE TABLE IF NOT EXISTS courses (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				code TEXT UNIQUE NOT NULL,
-				name TEXT NOT NULL,
-				category TEXT NOT NULL,
-				instructor TEXT NOT NULL,
-				keywords TEXT
-			)
-			"""
-		)
-		cur.execute(
-			"""
-			CREATE TABLE IF NOT EXISTS sessions (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				session_id TEXT UNIQUE NOT NULL,
-				user_email TEXT,
-				started_at TEXT NOT NULL
-			)
-			"""
-		)
-		cur.execute(
-			"""
-			CREATE TABLE IF NOT EXISTS enrollments (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				session_id TEXT NOT NULL,
-				course_code TEXT NOT NULL,
-				student_name TEXT NOT NULL,
-				student_email TEXT NOT NULL,
-				enrolled_at TEXT NOT NULL
-			)
-			"""
-		)
-		cur.execute(
-			"""
-			CREATE TABLE IF NOT EXISTS chat_messages (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				session_id TEXT NOT NULL,
-				user_message TEXT NOT NULL,
-				bot_response TEXT NOT NULL,
-				intent TEXT NOT NULL,
-				created_at TEXT NOT NULL
-			)
-			"""
-		)
-		conn.commit()
-	finally:
-		conn.close()
+		with engine.connect() as conn:
+			conn.execute(text("SELECT 1"))
+		schema = inspector.default_schema_name or "public"
+		tables: List[str] = inspector.get_table_names(schema=schema)
+		name = engine.url.database
+		return {
+			"name": name,
+			"schema": schema,
+			"tables": tables,
+			"status": "connected",
+		}
+	except Exception as exc:  # pragma: no cover - connectivity issue
+		return {"status": "error", "error": str(exc)}
 
 
-def seed_db() -> None:
-	conn = get_connection()
-	try:
-		cur = conn.cursor()
-		# Seed courses if empty
-		cur.execute("SELECT COUNT(1) AS c FROM courses")
-		count = cur.fetchone()[0]
-		if count == 0:
-			courses = [
-				("CS102", "Python for AI", "AI Fundamentals", "Dr. Smith", "python, beginner, programming"),
-				("ML201", "ML Fundamentals", "Machine Learning", "Prof. Lee", "machine learning, ml, supervised"),
-				("DL301", "Deep Learning", "Deep Learning", "Dr. Kim", "deep learning, neural network, tensorflow"),
-				("NLP201", "NLP Basics", "NLP", "Dr. Chen", "nlp, text, language"),
-			]
-			cur.executemany(
-				"INSERT INTO courses (code, name, category, instructor, keywords) VALUES (?, ?, ?, ?, ?)",
-				courses,
-			)
-			conn.commit()
-	finally:
-		conn.close()
+models.py
+
+from __future__ import annotations
+
+from datetime import date
+
+from sqlalchemy import CheckConstraint, Date, Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
-# Data access functions
-
-def list_courses() -> List[Dict[str, Any]]:
-	conn = get_connection()
-	try:
-		cur = conn.cursor()
-		cur.execute("SELECT code, name, category, instructor, keywords FROM courses ORDER BY name ASC")
-		rows = cur.fetchall()
-		return [dict(row) for row in rows]
-	finally:
-		conn.close()
+class Base(DeclarativeBase):
+	pass
 
 
-def search_courses(keyword: str) -> List[Dict[str, Any]]:
-	kw = f"%{keyword.lower()}%"
-	conn = get_connection()
-	try:
-		cur = conn.cursor()
-		cur.execute(
-			"""
-			SELECT code, name, category, instructor, keywords
-			FROM courses
-			WHERE lower(name) LIKE ? OR lower(category) LIKE ? OR lower(instructor) LIKE ? OR lower(keywords) LIKE ? OR lower(code) LIKE ?
-			ORDER BY name ASC
-			""",
-			(kw, kw, kw, kw, kw),
-		)
-		return [dict(row) for row in cur.fetchall()]
-	finally:
-		conn.close()
+class Task(Base):
+	__tablename__ = "tasks"
 
+	id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+	project_name: Mapped[str] = mapped_column(String(120), index=True, nullable=False)
+	task_name: Mapped[str] = mapped_column(String(200), nullable=False)
+	user_name: Mapped[str] = mapped_column(String(80), index=True, nullable=False)
+	start_date: Mapped[date] = mapped_column(Date, index=True, nullable=False)
+	days_required: Mapped[int] = mapped_column(Integer, nullable=False)
+	end_date: Mapped[date] = mapped_column(Date, index=True, nullable=False)
+	progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-def create_session(session_id: str, user_email: Optional[str]) -> None:
-	conn = get_connection()
-	try:
-		cur = conn.cursor()
-		cur.execute(
-			"INSERT OR IGNORE INTO sessions (session_id, user_email, started_at) VALUES (?, ?, ?)",
-			(session_id, user_email, datetime.utcnow().isoformat()),
-		)
-		conn.commit()
-	finally:
-		conn.close()
-
-
-def list_sessions_by_email(user_email: str) -> List[Dict[str, Any]]:
-	conn = get_connection()
-	try:
-		cur = conn.cursor()
-		cur.execute(
-			"SELECT session_id, user_email, started_at FROM sessions WHERE user_email = ? ORDER BY started_at DESC",
-			(user_email,),
-		)
-		return [dict(row) for row in cur.fetchall()]
-	finally:
-		conn.close()
-
-
-def add_enrollment(session_id: str, course_code: str, student_name: str, student_email: str) -> None:
-	conn = get_connection()
-	try:
-		cur = conn.cursor()
-		cur.execute(
-			"""
-			INSERT INTO enrollments (session_id, course_code, student_name, student_email, enrolled_at)
-			VALUES (?, ?, ?, ?, ?)
-			""",
-			(session_id, course_code, student_name, student_email, datetime.utcnow().isoformat()),
-		)
-		conn.commit()
-	finally:
-		conn.close()
-
-
-def list_enrollments() -> List[Dict[str, Any]]:
-	conn = get_connection()
-	try:
-		cur = conn.cursor()
-		cur.execute(
-			"SELECT session_id, course_code, student_name, student_email, enrolled_at FROM enrollments ORDER BY enrolled_at DESC"
-		)
-		return [dict(row) for row in cur.fetchall()]
-	finally:
-		conn.close()
-
-
-def save_chat_message(session_id: str, user_message: str, bot_response: str, intent: str) -> None:
-	conn = get_connection()
-	try:
-		cur = conn.cursor()
-		cur.execute(
-			"""
-			INSERT INTO chat_messages (session_id, user_message, bot_response, intent, created_at)
-			VALUES (?, ?, ?, ?, ?)
-			""",
-			(session_id, user_message, bot_response, intent, datetime.utcnow().isoformat()),
-		)
-		conn.commit()
-	finally:
-		conn.close()
-
-
-def get_chat_history(session_id: str) -> List[Dict[str, Any]]:
-	conn = get_connection()
-	try:
-		cur = conn.cursor()
-		cur.execute(
-			"SELECT user_message, bot_response, intent, created_at FROM chat_messages WHERE session_id = ? ORDER BY id ASC",
-			(session_id,),
-		)
-		return [dict(row) for row in cur.fetchall()]
-	finally:
-		conn.close()
-
-
----routes.py---
-
-from fastapi import APIRouter, HTTPException
-from typing import List, Dict
-from . import models
-from .services import bot
-from .schemas import (
-	ChatRequest,
-	ChatResponse,
-	EnrollmentRequest,
-	Course,
-	Enrollment,
-	CreateSessionRequest,
-	Session,
-)
-
-router = APIRouter()
-
-
-@router.get("/", tags=["root"])
-async def root() -> Dict[str, str]:
-	return {
-		"message": "Welcome to AI Campus Assistant Chatbot API. See /docs for Swagger UI.",
-	}
-
-
-@router.post("/api/session", tags=["session"])
-async def create_session(payload: CreateSessionRequest) -> Dict[str, str]:
-	models.create_session(payload.session_id, payload.user_email)
-	return {"session_id": payload.session_id}
-
-
-@router.get("/api/chat-history", tags=["session"], response_model=List[Session])
-async def chat_history(user_email: str) -> List[Session]:
-	sessions = models.list_sessions_by_email(user_email)
-	return [Session(**s) for s in sessions]
-
-
-@router.post("/api/chat", tags=["chat"], response_model=ChatResponse)
-async def chat(payload: ChatRequest) -> ChatResponse:
-	# Ensure session exists implicitly
-	models.create_session(payload.session_id, None)
-	result = bot.process_message(payload.session_id, payload.message)
-	return ChatResponse(session_id=payload.session_id, intent=result["intent"], response=result["response"])
-
-
-@router.post("/api/enroll", tags=["enroll"])
-async def enroll(payload: EnrollmentRequest) -> Dict[str, str]:
-	# Basic validation: course exists
-	matches = [c for c in models.search_courses(payload.course_code) if c["code"].lower() == payload.course_code.lower()]
-	if not matches:
-		raise HTTPException(status_code=404, detail="Course not found")
-	models.add_enrollment(
-		session_id=payload.session_id,
-		course_code=payload.course_code,
-		student_name=payload.student_name,
-		student_email=payload.student_email,
+	__table_args__ = (
+		CheckConstraint("progress >= 0 AND progress <= 100", name="ck_progress_range"),
 	)
-	return {"status": "enrolled", "course_code": payload.course_code}
+
+routes.py
+
+from __future__ import annotations
+
+from datetime import date
+from typing import Dict, Iterable, List, Tuple
+
+import pandas as pd
+from flask import Blueprint, jsonify, request
+from sqlalchemy import asc, desc, extract, func, select
+
+from .db import get_db_session, get_db_status
+from .models import Base, Task
+
+api_bp = Blueprint("api", __name__)
 
 
-@router.get("/api/courses", tags=["courses"], response_model=List[Course])
-async def get_courses() -> List[Course]:
-	return [Course(**c) for c in models.list_courses()]
+@api_bp.before_app_first_request
+def create_tables_if_needed():
+	session = get_db_session()
+	try:
+		engine = session.get_bind()
+		Base.metadata.create_all(bind=engine)
+	finally:
+		session.close()
 
 
-@router.get("/api/courses/search", tags=["courses"], response_model=List[Course])
-async def search_courses(keyword: str) -> List[Course]:
-	return [Course(**c) for c in models.search_courses(keyword)]
+@api_bp.get("/database-check")
+def database_check():
+	return jsonify(get_db_status())
 
 
-@router.get("/api/enrollments", tags=["enroll"], response_model=List[Enrollment])
-async def get_enrollments() -> List[Enrollment]:
-	return [Enrollment(**e) for e in models.list_enrollments()]
+@api_bp.post("/api/upload-xlsx")
+def upload_xlsx():
+	if "file" not in request.files:
+		return jsonify({"error": "missing file"}), 400
+	file = request.files["file"]
+	if file.filename == "":
+		return jsonify({"error": "empty filename"}), 400
+
+	try:
+		df = pd.read_excel(file, engine="openpyxl")
+		# Expected columns mapping
+		column_map = {
+			"Project Name": "project_name",
+			"Task Name": "task_name",
+			"User": "user_name",
+			"Start Date": "start_date",
+			"Days Required": "days_required",
+			"End Date": "end_date",
+			"Progress": "progress",
+		}
+		missing = [c for c in column_map if c not in df.columns]
+		if missing:
+			return jsonify({"error": f"missing columns: {missing}"}), 400
+
+		records: List[Task] = []
+		for _, row in df.iterrows():
+			records.append(
+				Task(
+					project_name=str(row["Project Name"]).strip(),
+					task_name=str(row["Task Name"]).strip(),
+					user_name=str(row["User"]).strip(),
+					start_date=pd.to_datetime(row["Start Date"]).date(),
+					days_required=int(row["Days Required"]),
+					end_date=pd.to_datetime(row["End Date"]).date(),
+					progress=int(row["Progress"]),
+				),
+			)
+
+		session = get_db_session()
+		try:
+			session.add_all(records)
+			session.commit()
+		finally:
+			session.close()
+		return jsonify({"inserted": len(records)})
+	except Exception as exc:
+		return jsonify({"error": str(exc)}), 400
 
 
-----schemas.py----
-
-from fastapi import APIRouter, HTTPException
-from typing import List, Dict
-from . import models
-from .services import bot
-from .schemas import (
-	ChatRequest,
-	ChatResponse,
-	EnrollmentRequest,
-	Course,
-	Enrollment,
-	CreateSessionRequest,
-	Session,
-)
-
-router = APIRouter()
-
-
-@router.get("/", tags=["root"])
-async def root() -> Dict[str, str]:
-	return {
-		"message": "Welcome to AI Campus Assistant Chatbot API. See /docs for Swagger UI.",
-	}
-
-
-@router.post("/api/session", tags=["session"])
-async def create_session(payload: CreateSessionRequest) -> Dict[str, str]:
-	models.create_session(payload.session_id, payload.user_email)
-	return {"session_id": payload.session_id}
-
-
-@router.get("/api/chat-history", tags=["session"], response_model=List[Session])
-async def chat_history(user_email: str) -> List[Session]:
-	sessions = models.list_sessions_by_email(user_email)
-	return [Session(**s) for s in sessions]
-
-
-@router.post("/api/chat", tags=["chat"], response_model=ChatResponse)
-async def chat(payload: ChatRequest) -> ChatResponse:
-	# Ensure session exists implicitly
-	models.create_session(payload.session_id, None)
-	result = bot.process_message(payload.session_id, payload.message)
-	return ChatResponse(session_id=payload.session_id, intent=result["intent"], response=result["response"])
-
-
-@router.post("/api/enroll", tags=["enroll"])
-async def enroll(payload: EnrollmentRequest) -> Dict[str, str]:
-	# Basic validation: course exists
-	matches = [c for c in models.search_courses(payload.course_code) if c["code"].lower() == payload.course_code.lower()]
-	if not matches:
-		raise HTTPException(status_code=404, detail="Course not found")
-	models.add_enrollment(
-		session_id=payload.session_id,
-		course_code=payload.course_code,
-		student_name=payload.student_name,
-		student_email=payload.student_email,
-	)
-	return {"status": "enrolled", "course_code": payload.course_code}
-
-
-@router.get("/api/courses", tags=["courses"], response_model=List[Course])
-async def get_courses() -> List[Course]:
-	return [Course(**c) for c in models.list_courses()]
-
-
-@router.get("/api/courses/search", tags=["courses"], response_model=List[Course])
-async def search_courses(keyword: str) -> List[Course]:
-	return [Course(**c) for c in models.search_courses(keyword)]
-
-
-@router.get("/api/enrollments", tags=["enroll"], response_model=List[Enrollment])
-async def get_enrollments() -> List[Enrollment]:
-	return [Enrollment(**e) for e in models.list_enrollments()]
-
-
----services.py---
-
-from typing import List, Dict, Any
-from . import models
-
-
-class ChatBot:
-	def __init__(self) -> None:
-		self.greeting_keywords = [
-			"hi",
-			"hello",
-			"hey",
-			"good morning",
-			"good evening",
-			"hola",
+@api_bp.get("/api/export-json")
+def export_json():
+	session = get_db_session()
+	try:
+		rows: List[Task] = session.execute(select(Task)).scalars().all()
+		data = [
+			{
+				"id": t.id,
+				"project_name": t.project_name,
+				"task_name": t.task_name,
+				"user_name": t.user_name,
+				"start_date": t.start_date.isoformat(),
+				"days_required": t.days_required,
+				"end_date": t.end_date.isoformat(),
+				"progress": t.progress,
+			}
+			for t in rows
 		]
-		self.list_keywords = ["list", "show all", "catalog", "courses"]
-		self.search_keywords = ["find", "search", "look for", "have"]
-		self.enroll_keywords = ["enroll", "register", "sign up", "apply"]
-		self.exit_keywords = ["bye", "exit", "quit", "thanks", "thank you"]
+		return jsonify(data)
+	finally:
+		session.close()
 
-	def detect_intent(self, message: str) -> str:
-		text = message.lower().strip()
-		if any(k in text for k in self.greeting_keywords):
-			return "greeting"
-		if any(k in text for k in self.list_keywords):
-			return "list"
-		if any(k in text for k in self.enroll_keywords):
-			return "enroll"
-		if any(k in text for k in self.search_keywords):
-			return "search"
-		if any(k in text for k in self.exit_keywords):
-			return "exit"
-		return "unknown"
 
-	def find_courses(self, message: str) -> List[Dict[str, Any]]:
-		# Use keywords present to search
-		tokens = [t.strip(',.:;!?') for t in message.lower().split() if len(t) > 2]
-		unique_tokens = list(dict.fromkeys(tokens))
-		results: List[Dict[str, Any]] = []
-		seen_codes = set()
-		for token in unique_tokens:
-			if token in {"list", "show", "courses", "course", "find", "search", "have", "any"}:
-				continue
-			matches = models.search_courses(token)
-			for m in matches:
-				if m["code"] not in seen_codes:
-					results.append(m)
-					seen_codes.add(m["code"])
-		if not results:
-			# Fallback to listing all if no keywords found
-			results = models.list_courses()
-		return results
+def _month_key(by: str) -> Tuple:
+	if by == "end":
+		return (extract("year", Task.end_date), extract("month", Task.end_date))
+	return (extract("year", Task.start_date), extract("month", Task.start_date))
 
-	def process_message(self, session_id: str, message: str) -> Dict[str, Any]:
-		intent = self.detect_intent(message)
-		if intent == "greeting":
-			response = (
-				"Hello! I can help you discover AI/CS courses. "
-				"Ask me to list courses, search by keyword (e.g., 'search deep learning'), or say 'enroll' to register."
+
+@api_bp.get("/api/analytics/tasks/monthly-aggr")
+def analytics_monthly_aggr():
+	by = request.args.get("by", "start").lower()
+	session = get_db_session()
+	try:
+		year, month = _month_key(by)
+		q = (
+			select(
+				year.label("year"),
+				month.label("month"),
+				func.count(Task.id).label("task_count"),
+				func.avg(Task.progress).label("avg_progress"),
 			)
-		elif intent == "list":
-			courses = models.list_courses()
-			if not courses:
-				response = "I couldn't find any courses right now."
-			else:
-				response = "Here are available courses:\n" + "\n".join(
-					[f"- {c['name']} ({c['code']}) — {c['category']} by {c['instructor']}" for c in courses]
-				)
-		elif intent == "search":
-			results = self.find_courses(message)
-			if not results:
-				response = "No courses matched your search. Try different keywords."
-			else:
-				response = "I found these courses:\n" + "\n".join(
-					[f"- {c['name']} ({c['code']}) — {c['category']} by {c['instructor']}" for c in results]
-				)
-		elif intent == "enroll":
-			response = (
-				"Great! To enroll, send: course_code, your name, and email — or use /api/enroll."
+			.group_by(year, month)
+			.order_by(year, month)
+		)
+		rows = session.execute(q).mappings().all()
+		return jsonify([dict(r) for r in rows])
+	finally:
+		session.close()
+
+
+@api_bp.get("/api/analytics/progress/monthly")
+def analytics_progress_monthly():
+	session = get_db_session()
+	try:
+		year = extract("year", Task.start_date)
+		month = extract("month", Task.start_date)
+		stats_q = (
+			select(
+				year.label("year"),
+				month.label("month"),
+				func.avg(Task.progress).label("avg_progress"),
+				func.min(Task.progress).label("min_progress"),
+				func.max(Task.progress).label("max_progress"),
 			)
-		elif intent == "exit":
-			response = "Thanks for chatting! Goodbye."
-		else:
-			response = (
-				"I'm not sure I understood. You can ask me to list courses, search by keyword, or enroll."
-			)
+			.group_by(year, month)
+		)
+		stats = session.execute(stats_q).mappings().all()
+		if not stats:
+			return jsonify({"months": []})
+		min_month = min(stats, key=lambda r: r["avg_progress"])
+		max_month = max(stats, key=lambda r: r["avg_progress"])
+		return jsonify({
+			"months": [dict(r) for r in stats],
+			"min_avg_progress_month": dict(min_month),
+			"max_avg_progress_month": dict(max_month),
+		})
+	finally:
+		session.close()
 
-		models.save_chat_message(session_id, message, response, intent)
-		return {"intent": intent, "response": response}
+
+@api_bp.get("/api/analytics/tasks")
+def analytics_tasks_by_user():
+	user_name = request.args.get("user_name")
+	if not user_name:
+		return jsonify({"error": "user_name is required"}), 400
+
+	sort_arg = request.args.get("sort", "start_date:asc")
+	field, _, direction = sort_arg.partition(":")
+	order_field = getattr(Task, field, Task.start_date)
+	order = asc(order_field) if direction.lower() != "desc" else desc(order_field)
+
+	session = get_db_session()
+	try:
+		q = select(Task).where(Task.user_name == user_name).order_by(order)
+		rows = session.execute(q).scalars().all()
+		data = [
+			{
+				"id": t.id,
+				"project_name": t.project_name,
+				"task_name": t.task_name,
+				"user_name": t.user_name,
+				"start_date": t.start_date.isoformat(),
+				"days_required": t.days_required,
+				"end_date": t.end_date.isoformat(),
+				"progress": t.progress,
+			}
+			for t in rows
+		]
+		return jsonify(data)
+	finally:
+		session.close()
+
+outside the app 
+
+run.py
+
+from app import create_app
+
+app = create_app()
+
+if __name__ == "__main__":
+	app.run(debug=True)
 
 
-bot = ChatBot()
+requirements.txt
 
-
--------requirements.txt-----------
-
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-pydantic==2.9.2
-pydantic-settings==2.6.1
+Flask==3.0.3
+Flask-Cors==4.0.1
+SQLAlchemy==2.0.36
+psycopg2-binary==2.9.9
+pandas==2.2.3
+openpyxl==3.1.5
 python-dotenv==1.0.1
-email-validator==2.2.0
 
-pip install -r requirements.txt
